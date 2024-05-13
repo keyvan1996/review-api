@@ -5,6 +5,7 @@ import {
   integer,
   doublePrecision,
   index,
+  timestamp
 } from "drizzle-orm/pg-core";
 
 export const ratings = pgTable(
@@ -14,6 +15,7 @@ export const ratings = pgTable(
     productId: integer("product_id"),
     ratingValue: doublePrecision("rating_value"),
     ratingText: text("rating_text"),
+    createdAt: timestamp('created_at').defaultNow(),
   },
   (table) => {
     return {

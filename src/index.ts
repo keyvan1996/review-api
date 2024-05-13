@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { Hono } from "hono";
+import { cors } from "hono/cors"
 import { ratings } from "./db/schema";
 import { avg, eq, count } from "drizzle-orm";
 import { profanities } from "profanities";
@@ -10,6 +11,7 @@ export type Env = {
 };
 
 const app = new Hono<{ Bindings: Env }>();
+app.use('/ratings/*', cors())
 
 // GET endpoint to retrieve ratings for a specific product ID with pagination
 app.get("/ratings/:product_id", async (c) => {
@@ -26,27 +28,29 @@ app.get("/ratings/:product_id", async (c) => {
     const sql = neon(c.env.DATABASE_URL);
     const db = drizzle(sql);
 
-    // Query ratings for the specified product_id with pagination
-    const ratingsQuery = await db
-      .select()
-      .from(ratings)
-      .where(eq(ratings.productId, productId))
-      .limit(pageSize)
-      .offset(offset);
+    // Execute both queries concurrently using Promise.all
+    const [ratingsQuery, avgRatingResult, totalRatingsQuery] =
+      await Promise.all([
+        // Query ratings for the specified product_id with pagination
+        db
+          .select()
+          .from(ratings)
+          .where(eq(ratings.productId, productId))
+          .limit(pageSize)
+          .offset(offset),
+        // Calculate the average rating and total number of ratings for the specified product_id
+        db
+          .select({ value: avg(ratings.ratingValue) })
+          .from(ratings)
+          .where(eq(ratings.productId, productId)),
+        db
+          .select({ count: count() })
+          .from(ratings)
+          .where(eq(ratings.productId, productId)),
+      ]);
 
-    // Calculate the average rating for the specified product_id
-    const avgRatingResult = await db
-      .select({ value: avg(ratings.ratingValue) })
-      .from(ratings)
-      .where(eq(ratings.productId, productId));
-    // Extract the average rating from the result
+    // Extract the average rating and total ratings count from the result
     const avgRating = avgRatingResult[0]?.value || 0;
-    // Perform count using a separate query
-    const totalRatingsQuery = await db
-      .select({ count: count() })
-      .from(ratings)
-      .where(eq(ratings.productId, productId));
-    console.log(totalRatingsQuery);
     const totalRatings = totalRatingsQuery[0]?.count || 0;
 
     // Calculate the total number of pages
@@ -114,16 +118,13 @@ app.get("/ratings/:product_ids/average-rating", async (c) => {
   try {
     const productIdsParam = c.req.param("product_ids");
     if (!productIdsParam) {
-      return c.json({ error: "No product IDs provided", status: 400 });
+      return c.json({ error: "No product IDs provided!", status: 400 });
     }
     const sql = neon(c.env.DATABASE_URL);
     const db = drizzle(sql);
 
     // Calculate average rating and total reviews for each product_id
-    const avgRatings: Record<
-      number,
-      { averageRating: number; totalReviews: number }
-    > = {};
+    const avgRatings: { productId: number; averageRating: number; totalReviews: number }[] = [];
 
     for (const productIdParam of productIdsParam.split(",")) {
       const productId = parseInt(productIdParam);
@@ -132,21 +133,23 @@ app.get("/ratings/:product_ids/average-rating", async (c) => {
         continue; // Skip to the next iteration if productId is NaN
       }
 
-      const avgRatingResult = await db
-        .select({ value: avg(ratings.ratingValue) })
-        .from(ratings)
-        .where(eq(ratings.productId, productId));
-
-      const totalReviewsResult = await db
-        .select({ value: count() })
-        .from(ratings)
-        .where(eq(ratings.productId, productId));
+      // Execute both queries concurrently using Promise.all
+      const [avgRatingResult, totalReviewsResult] = await Promise.all([
+        db
+          .select({ value: avg(ratings.ratingValue) })
+          .from(ratings)
+          .where(eq(ratings.productId, productId)),
+        db
+          .select({ value: count() })
+          .from(ratings)
+          .where(eq(ratings.productId, productId)),
+      ]);
 
       // Extract the average rating and total reviews from the result
       const averageRating = Number(avgRatingResult[0]?.value) || 0;
       const totalReviews = Number(totalReviewsResult[0]?.value) || 0;
 
-      avgRatings[productId] = { averageRating, totalReviews };
+      avgRatings.push({ productId: productId, averageRating, totalReviews });
     }
 
     return c.json({ averageRatings: avgRatings });
