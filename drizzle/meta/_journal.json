@@ -1,0 +1,34 @@
+{
+  "version": "6",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1715387164190,
+      "tag": "0000_woozy_proemial_gods",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1715391109944,
+      "tag": "0001_worthless_rhino",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1715567720786,
+      "tag": "0002_abandoned_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1715567758028,
+      "tag": "0003_low_wolfpack",
+      "breakpoints": true
+    }
+  ]
+}

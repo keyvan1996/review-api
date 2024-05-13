@@ -1,0 +1,49 @@
+{
+  "id": "e5bf553c-8957-48d9-8600-78236ae68b5e",
+  "prevId": "8f2048e7-5c89-4cf7-b861-4e656753ae88",
+  "version": "6",
+  "dialect": "postgresql",
+  "tables": {
+    "public.ratings": {
+      "name": "ratings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rating_value": {
+          "name": "rating_value",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rating_text": {
+          "name": "rating_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

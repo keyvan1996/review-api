@@ -1,0 +1,1 @@
+ALTER TABLE "ratings" DROP COLUMN IF EXISTS "created_at";
